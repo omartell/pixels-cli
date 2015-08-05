@@ -8,6 +8,9 @@
       "S" {:command :show-image}
       "I" {:command :new-image :input {:m (Integer/parseInt (second chars))
                                        :n (Integer/parseInt (last chars))}}
+      "L" {:command :colour-pixel :input {:x (Integer/parseInt (second chars))
+                                          :y (Integer/parseInt (chars 2))
+                                          :colour (last chars)}}
       nil)))
 
 (defn terminate-session []

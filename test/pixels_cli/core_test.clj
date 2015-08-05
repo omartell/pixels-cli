@@ -37,4 +37,7 @@
             :input {:m 5 :n 4}}
            (parse-command "I 5 4"))))
   (testing "show current image"
-    (is (= {:command :show-image} (parse-command "S")))))
+    (is (= {:command :show-image} (parse-command "S"))))
+  (testing "colour pixel X Y"
+    (is (= {:command :colour-pixel :input {:x 1 :y 1 :colour "C"}}
+           (parse-command "L 1 1 C")))))
