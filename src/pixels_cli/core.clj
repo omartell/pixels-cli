@@ -21,9 +21,7 @@
 (defn colour-pixel [command image]
   (update-in image
              [:coloured]
-             (fn [m] (let [x (get-in command [:input :x])
-                          y (get-in command [:input :y])
-                          colour (get-in command [:input :colour])]
+             (fn [m] (let [{x :x y :y colour :colour} :input]
                       (assoc m [x y] colour)))))
 
 (defn render-image [image]
