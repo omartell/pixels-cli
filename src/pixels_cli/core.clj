@@ -2,19 +2,17 @@
   (:require [clojure.string :as string]))
 
 (defn parse-command [str]
-  (let [chars (string/split str #" ")]
-    (case (first chars)
+  (let [chars (string/split str #" ")
+        [char1 char2 char3 char4] chars]
+    (case char1
       "X" {:command :exit}
       "S" {:command :show-image}
-      "I" {:command :new-image :input {:m (Integer/parseInt (second chars))
-                                       :n (Integer/parseInt (last chars))}}
-      "L" {:command :colour-pixel :input {:x (Integer/parseInt (second chars))
-                                          :y (Integer/parseInt (chars 2))
-                                          :colour (last chars)}}
+      "I" {:command :new-image :input {:m (Integer/parseInt char2)
+                                       :n (Integer/parseInt char3)}}
+      "L" {:command :colour-pixel :input {:x (Integer/parseInt char2)
+                                          :y (Integer/parseInt char3)
+                                          :colour char4}}
       nil)))
-
-(defn terminate-session []
-  (println "Terminating session. Bye"))
 
 (defn new-image [command _]
   {:m (get-in command [:input :m])
@@ -49,6 +47,9 @@
 (defn show-image [command app-state]
   (render-image (build-image (:history app-state)))
   app-state)
+
+(defn terminate-session []
+  (println "Terminating session. Bye"))
 
 (defn process-command [command app-state]
   (let [instruction (:command command)]
