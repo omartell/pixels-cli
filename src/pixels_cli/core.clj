@@ -7,37 +7,38 @@
     (case char1
       "X" {:command :exit}
       "S" {:command :show-image}
-      "I" {:command :new-image :input {:m (Integer/parseInt char2)
-                                       :n (Integer/parseInt char3)}}
-      "L" {:command :colour-pixel :input {:x (Integer/parseInt char2)
-                                          :y (Integer/parseInt char3)
-                                          :colour char4}}
+      "I" {:command :new-image
+           :input {:m (Integer/parseInt char2)
+                   :n (Integer/parseInt char3)}}
+      "L" {:command :colour-pixel
+           :input {:x (Integer/parseInt char2)
+                   :y (Integer/parseInt char3)
+                   :colour char4}}
       nil)))
 
-(defn new-image [command _]
-  {:m (get-in command [:input :m])
-   :n (get-in command [:input :n])})
+(defn new-image [command]
+  (let [m (get-in command [:input :m])
+        n (get-in command [:input :n])
+        pixels (into (sorted-map)
+                     (zipmap (for [x (range m) y (range n)]
+                               [(+ x 1) (+ y 1)])
+                             (repeat "O")))]
+    {:m m :n n :pixels pixels}))
 
 (defn colour-pixel [command image]
-  (update-in image
-             [:coloured]
-             (fn [m] (let [{x :x y :y colour :colour} :input]
-                      (assoc m [x y] colour)))))
+  (let [{{x :x y :y colour :colour} :input} command]
+    (assoc-in image [:pixels [x y]] colour)))
 
-(defn render-image [image]
-  (let [m (:m image 0)
-        n (:n image 0)
-        coloured (:coloured image)]
-    (dotimes [y n]
-      (dotimes [x m]
-        (print "O"))
-      (println ""))))
+(defn render-image [{pixels :pixels m :m n :n}]
+  (println (string/join "\n"
+                        (map #(apply str (vals %1))
+                             (partition-all m pixels)))))
 
 (defn build-image [commands]
   (println "commands: " commands)
   (reduce (fn [image command]
             (case (:command command)
-              :new-image (new-image command image)
+              :new-image (new-image command)
               :colour-pixel (colour-pixel command image)))
           {}
           commands))
