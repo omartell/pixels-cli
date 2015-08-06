@@ -21,6 +21,12 @@
          (build-image [{:command :new-image
                         :input {:m 4 :n 3}}]))))
 
+(deftest colouring-pixels
+  (is (= {:coloured {[2 1] "C"}}
+         (colour-pixel-command {:command :colour-pixel :input {:x 2
+                                                               :y 1
+                                                               :colour "C"}} {}))))
+
 (deftest rendering-images
   (is (= (image "OOOO"
                 "OOOO"

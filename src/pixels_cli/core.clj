@@ -20,6 +20,14 @@
   {:m (get-in command [:input :m])
    :n (get-in command [:input :n])})
 
+(defn colour-pixel [command image]
+  (update-in image
+             [:coloured]
+             (fn [m] (let [x (get-in command [:input :x])
+                          y (get-in command [:input :y])
+                          colour (get-in command [:input :colour])]
+                      (assoc m [x y] colour)))))
+
 (defn render-image [image]
   (let [m (:m image 0)
         n (:n image 0)
@@ -33,16 +41,20 @@
   (println "commands: " commands)
   (reduce (fn [image command]
             (case (:command command)
-              :new-image (new-image command image)))
+              :new-image (new-image command image)
+              :colour-pixel (colour-pixel command image)))
           {}
           commands))
 
+(defn show-image [command app-state]
+  (render-image (build-image (:history app-state)))
+  app-state)
+
 (defn process-command [command app-state]
-  (let [instruction (:command command)
-        history (:history app-state)]
-    (case instruction
-      :new-image  (assoc app-state :history (conj history command))
-      :show-image (render-image (build-image history))
+  (let [instruction (:command command)]
+    (condp some [instruction]
+      #{:new-image :colour-pixel} (update-in app-state [:history] conj command)
+      #{:show-image} (show-image command app-state)
       app-state)))
 
 (defn -main [& args]
@@ -54,4 +66,3 @@
     (if-not (= :exit (:command command))
       (let [new-app-state (process-command command app-state)]
         (recur (parse-command (read-line)) new-app-state)))))
-
