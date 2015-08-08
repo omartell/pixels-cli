@@ -53,6 +53,7 @@
   (let [coordinates-by-y-axis (into (sorted-map-by (fn [[x1 y1] [x2 y2]]
                                                      (compare [y1 x1] [y2 x2])))
                                     pixels)]
+    (println "Current image:")
     (println (string/join "\n"
                           (map #(apply str (vals %1))
                                (partition-all m coordinates-by-y-axis))))))
@@ -96,4 +97,3 @@
       (= :exit (:command command)) (terminate-session))
     (recur (process-command command app-state)
            (parse-command (read-line)))))
-

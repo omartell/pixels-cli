@@ -42,13 +42,12 @@
                                                        :colour "C"}} {}))))
 
 (deftest rendering-images
-  (is (= (image "COO"
-                "COO"
-                "COO")
-         (with-out-str (render-image {:pixels {[1 1] "C" [2 1] "O" [3 1] "O"
-                                               [1 2] "C" [2 2] "O" [3 2] "O"
-                                               [1 3] "C" [2 3] "O" [3 3] "O"}
-                                      :m 3 :n 3})))))
+  (is (re-find
+       (re-pattern (image "COO" "COO" "COO"))
+       (with-out-str (render-image {:pixels {[1 1] "C" [2 1] "O" [3 1] "O"
+                                             [1 2] "C" [2 2] "O" [3 2] "O"
+                                             [1 3] "C" [2 3] "O" [3 3] "O"}
+                                    :m 3 :n 3})))))
 
 (deftest parsing-commands
   (testing "exit command"
