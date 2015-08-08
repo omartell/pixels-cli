@@ -16,36 +16,38 @@
            (process-command {:command :launch-rocket}
                             {:history []})))))
 
-(deftest creating-new-image
-  (is (= {:pixels {[1 1] "O" [1 2] "O" [1 3] "O"
-                   [2 1] "O" [2 2] "O" [2 3] "O"
-                   [3 1] "O" [3 2] "O" [3 3] "O"}
+(deftest creating-new-images
+  (is (= {:pixels {[1 1] "O" [2 1] "O" [3 1] "O"
+                   [1 2] "O" [2 2] "O" [3 2] "O"
+                   [1 3] "O" [2 3] "O" [3 3] "O"}
           :n 3 :m 3}
          (new-image {:command :new-image :input {:m 3 :n 3}}))))
 
 (deftest building-images
-  (is (= {:pixels {[1 1] "C" [1 2] "O" [1 3] "O"
-                   [2 1] "O" [2 2] "O" [2 3] "O"
-                   [3 1] "O" [3 2] "O" [3 3] "O"}
+  (is (= {:pixels {[1 1] "C" [2 1] "O" [3 1] "O"
+                   [1 2] "C" [2 2] "O" [3 2] "O"
+                   [1 3] "C" [2 3] "O" [3 3] "O"}
           :m 3 :n 3}
          (build-image [{:command :new-image
                         :input {:m 3 :n 3}}
                        {:command :colour-pixel
-                        :input {:x 1 :y 1 :colour "C"}}]))))
+                        :input {:x 1 :y 1 :colour "C"}}
+                       {:command :vertical-segment
+                        :input {:x 1 :y1 1 :y2 3 :colour "C"}}]))))
 
 (deftest colouring-pixels
-  (is (= {:coloured {[2 1] "C"}}
-         (colour-pixel-command {:command :colour-pixel :input {:x 2
-                                                               :y 1
-                                                               :colour "C"}} {}))))
+  (is (= {:pixels {[2 1] "C"}}
+         (colour-pixel {:command :colour-pixel :input {:x 2
+                                                       :y 1
+                                                       :colour "C"}} {}))))
 
 (deftest rendering-images
-  (is (= (image "OOO"
-                "OOO"
-                "OOO")
-         (with-out-str (render-image {:pixels {[1 1] "O" [1 2] "O" [1 3] "O"
-                                               [2 1] "O" [2 2] "O" [2 3] "O"
-                                               [3 1] "O" [3 2] "O" [3 3] "O"}
+  (is (= (image "COO"
+                "COO"
+                "COO")
+         (with-out-str (render-image {:pixels {[1 1] "C" [2 1] "O" [3 1] "O"
+                                               [1 2] "C" [2 2] "O" [3 2] "O"
+                                               [1 3] "C" [2 3] "O" [3 3] "O"}
                                       :m 3 :n 3})))))
 
 (deftest parsing-commands
@@ -59,4 +61,7 @@
     (is (= {:command :show-image} (parse-command "S"))))
   (testing "colour pixel X Y"
     (is (= {:command :colour-pixel :input {:x 1 :y 1 :colour "C"}}
-           (parse-command "L 1 1 C")))))
+           (parse-command "L 1 1 C"))))
+  (testing "drawing a vertical segment"
+    (is (= {:command :vertical-segment :input {:x 1 :y1 1 :y2 3 :colour "C"}}
+           (parse-command "V 1 1 3 C")))))

@@ -3,7 +3,7 @@
 
 (defn parse-command [str]
   (let [chars (string/split str #" ")
-        [char1 char2 char3 char4] chars]
+        [char1 char2 char3 char4 char5] chars]
     (case char1
       "X" {:command :exit}
       "S" {:command :show-image}
@@ -14,32 +14,45 @@
            :input {:x (Integer/parseInt char2)
                    :y (Integer/parseInt char3)
                    :colour char4}}
+      "V" {:command :vertical-segment
+           :input {:x (Integer/parseInt char2)
+                   :y1 (Integer/parseInt char3)
+                   :y2 (Integer/parseInt char4)
+                   :colour char5}}
       nil)))
 
 (defn new-image [command]
   (let [m (get-in command [:input :m])
         n (get-in command [:input :n])
-        pixels (into (sorted-map)
-                     (zipmap (for [x (range m) y (range n)]
-                               [(+ x 1) (+ y 1)])
-                             (repeat "O")))]
+        pixels (zipmap (for [x (range m) y (range n)]
+                         [(+ x 1) (+ y 1)])
+                       (repeat "O"))]
     {:m m :n n :pixels pixels}))
 
 (defn colour-pixel [command image]
   (let [{{x :x y :y colour :colour} :input} command]
     (assoc-in image [:pixels [x y]] colour)))
 
+(defn vertical-segment [command image]
+  (let [{{x :x y1 :y1 y2 :y2 colour :colour} :input} command
+        segment (for [y (range y1 (+ y2 1))] [[x y] colour])]
+    (update-in image [:pixels] #(into %1 segment))))
+
 (defn render-image [{pixels :pixels m :m n :n}]
-  (println (string/join "\n"
-                        (map #(apply str (vals %1))
-                             (partition-all m pixels)))))
+  (let [coordinates-by-y-axis (into (sorted-map-by (fn [[x1 y1] [x2 y2]]
+                                                     (compare [y1 x1] [y2 x2])))
+                                    pixels)]
+    (println (string/join "\n"
+                          (map #(apply str (vals %1))
+                               (partition-all m coordinates-by-y-axis))))))
 
 (defn build-image [commands]
   (println "commands: " commands)
   (reduce (fn [image command]
             (case (:command command)
               :new-image (new-image command)
-              :colour-pixel (colour-pixel command image)))
+              :colour-pixel (colour-pixel command image)
+              :vertical-segment (vertical-segment command image)))
           {}
           commands))
 
@@ -53,7 +66,9 @@
 (defn process-command [command app-state]
   (let [instruction (:command command)]
     (condp some [instruction]
-      #{:new-image :colour-pixel} (update-in app-state [:history] conj command)
+      #{:new-image
+        :colour-pixel
+        :vertical-segment} (update-in app-state [:history] conj command)
       #{:show-image} (show-image command app-state)
       app-state)))
 
