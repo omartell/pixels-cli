@@ -8,6 +8,19 @@
       {:command :new-image :input {:m m :n n}}
       {:command :new-image :error "n must be a number <= 250"})))
 
+(defn parse-colour-pixel-command [[xchar ychar colour]]
+  {:command :colour-pixel
+   :input {:x (Integer/parseInt xchar)
+           :y (Integer/parseInt ychar)
+           :colour colour}})
+
+(defn parse-vertical-segment-command [[xchar y1char y2char colour]]
+  {:command :vertical-segment
+   :input {:x (Integer/parseInt xchar)
+           :y1 (Integer/parseInt y1char)
+           :y2 (Integer/parseInt y2char)
+           :colour colour}})
+
 (defn parse-command [str]
   (let [chars (string/split str #" ")
         [char1 char2 char3 char4 char5] chars]
@@ -15,15 +28,8 @@
       "X" {:command :exit}
       "S" {:command :show-image}
       "I" (parse-new-image-command (rest chars))
-      "L" {:command :colour-pixel
-           :input {:x (Integer/parseInt char2)
-                   :y (Integer/parseInt char3)
-                   :colour char4}}
-      "V" {:command :vertical-segment
-           :input {:x (Integer/parseInt char2)
-                   :y1 (Integer/parseInt char3)
-                   :y2 (Integer/parseInt char4)
-                   :colour char5}}
+      "L" (parse-colour-pixel-command (rest chars))
+      "V" (parse-vertical-segment-command (rest chars))
       {:error "not a valid command"})))
 
 (defn new-image [command]
