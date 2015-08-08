@@ -22,12 +22,12 @@
       nil)))
 
 (defn new-image [command]
-  (let [m (get-in command [:input :m])
-        n (get-in command [:input :n])
-        pixels (zipmap (for [x (range m) y (range n)]
+  (let [column (get-in command [:input :m])
+        row (get-in command [:input :n])
+        pixels (zipmap (for [x (range column) y (range row)]
                          [(+ x 1) (+ y 1)])
                        (repeat "O"))]
-    {:m m :n n :pixels pixels}))
+    {:m column :n row :pixels pixels}))
 
 (defn colour-pixel [command image]
   (let [{{x :x y :y colour :colour} :input} command]
