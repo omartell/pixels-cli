@@ -73,3 +73,7 @@
 (deftest validating-supported-command
   (is (= {:error "not a valid command"}
          (parse-command "foobar"))))
+
+(deftest validating-number-params
+  (is (= {:error "not a valid argument"}
+         (parse-command "I F X"))))

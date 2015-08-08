@@ -24,13 +24,16 @@
 (defn parse-command [str]
   (let [chars (string/split str #" ")
         [char1 char2 char3 char4 char5] chars]
-    (case char1
-      "X" {:command :exit}
-      "S" {:command :show-image}
-      "I" (parse-new-image-command (rest chars))
-      "L" (parse-colour-pixel-command (rest chars))
-      "V" (parse-vertical-segment-command (rest chars))
-      {:error "not a valid command"})))
+    (try
+      (case char1
+        "X" {:command :exit}
+        "S" {:command :show-image}
+        "I" (parse-new-image-command (rest chars))
+        "L" (parse-colour-pixel-command (rest chars))
+        "V" (parse-vertical-segment-command (rest chars))
+        {:error "not a valid command"})
+      (catch NumberFormatException e
+        {:error "not a valid argument"}))))
 
 (defn new-image [command]
   (let [column (get-in command [:input :m])
