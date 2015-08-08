@@ -24,7 +24,7 @@
                    :y1 (Integer/parseInt char3)
                    :y2 (Integer/parseInt char4)
                    :colour char5}}
-      nil)))
+      {:error "not a valid command"})))
 
 (defn new-image [command]
   (let [column (get-in command [:input :m])
@@ -52,7 +52,6 @@
                                (partition-all m coordinates-by-y-axis))))))
 
 (defn build-image [commands]
-  (println "commands: " commands)
   (reduce (fn [image command]
             (case (:command command)
               :new-image (new-image command)
@@ -64,9 +63,6 @@
 (defn show-image [command app-state]
   (render-image (build-image (:history app-state)))
   app-state)
-
-(defn terminate-session []
-  (println "Terminating session. Bye"))
 
 (defn process-command [command app-state]
   (let [instruction (:command command)]
@@ -80,13 +76,18 @@
 (defn show-error [error]
   (println (str "Error: " error)))
 
+(defn terminate-session []
+  (println "Terminating session. Bye")
+  (System/exit 0))
+
 (defn -main [& args]
   (println "Tiny Interactive Graphical Editor")
   (println "Enter the commands, one command per line:")
-  (loop [command (parse-command (read-line))
-         app-state {:history []}]
+  (loop [app-state {:history []}
+         command (parse-command (read-line))]
     (cond
-      (contains? command :error)   (show-error (:error command))
-      (= :exit (:command command)) (terminate-session)
-      :else (let [new-app-state (process-command command app-state)]
-              (recur (parse-command (read-line)) new-app-state)))))
+      (contains? command :error) (show-error (:error command))
+      (= :exit (:command command)) (terminate-session))
+    (recur (process-command command app-state)
+           (parse-command (read-line)))))
+

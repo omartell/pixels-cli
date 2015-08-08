@@ -67,7 +67,10 @@
            (parse-command "V 1 1 3 C")))))
 
 (deftest validating-new-image-command
-  (testing "n should be a number and less than or equal 250"
-    (is (= {:command :new-image
-            :error "n must be a number <= 250" }
-           (parse-command "I 1 251")))))
+  (is (= {:command :new-image
+          :error "n must be a number <= 250" }
+         (parse-command "I 1 251"))))
+
+(deftest validating-supported-command
+  (is (= {:error "not a valid command"}
+         (parse-command "foobar"))))
