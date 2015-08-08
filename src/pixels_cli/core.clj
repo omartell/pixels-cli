@@ -1,15 +1,20 @@
 (ns pixels-cli.core
   (:require [clojure.string :as string]))
 
+(defn parse-new-image-command [[mchar nchar]]
+  (let [m (Integer/parseInt mchar)
+        n (Integer/parseInt nchar)]
+    (if (< n 250)
+      {:command :new-image :input {:m m :n n}}
+      {:command :new-image :error "n must be a number <= 250"})))
+
 (defn parse-command [str]
   (let [chars (string/split str #" ")
         [char1 char2 char3 char4 char5] chars]
     (case char1
       "X" {:command :exit}
       "S" {:command :show-image}
-      "I" {:command :new-image
-           :input {:m (Integer/parseInt char2)
-                   :n (Integer/parseInt char3)}}
+      "I" (parse-new-image-command (rest chars))
       "L" {:command :colour-pixel
            :input {:x (Integer/parseInt char2)
                    :y (Integer/parseInt char3)
@@ -72,12 +77,16 @@
       #{:show-image} (show-image command app-state)
       app-state)))
 
+(defn show-error [error]
+  (println (str "Error: " error)))
+
 (defn -main [& args]
   (println "Tiny Interactive Graphical Editor")
   (println "Enter the commands, one command per line:")
   (loop [command (parse-command (read-line))
          app-state {:history []}]
-    (println "parsed: " command)
-    (if-not (= :exit (:command command))
-      (let [new-app-state (process-command command app-state)]
-        (recur (parse-command (read-line)) new-app-state)))))
+    (cond
+      (contains? command :error)   (show-error (:error command))
+      (= :exit (:command command)) (terminate-session)
+      :else (let [new-app-state (process-command command app-state)]
+              (recur (parse-command (read-line)) new-app-state)))))

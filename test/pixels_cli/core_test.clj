@@ -65,3 +65,9 @@
   (testing "drawing a vertical segment"
     (is (= {:command :vertical-segment :input {:x 1 :y1 1 :y2 3 :colour "C"}}
            (parse-command "V 1 1 3 C")))))
+
+(deftest validating-new-image-command
+  (testing "n should be a number and less than or equal 250"
+    (is (= {:command :new-image
+            :error "n must be a number <= 250" }
+           (parse-command "I 1 251")))))
