@@ -52,7 +52,7 @@
         segment (for [y (range y1 (+ y2 1))] [[x y] colour])]
     (update-in image [:pixels] #(into %1 segment))))
 
-(defn render-image [{pixels :pixels m :m n :n}]
+(defn show-image [{pixels :pixels m :m n :n}]
   (let [coordinates-by-y-axis (into (sorted-map-by (fn [[x1 y1] [x2 y2]]
                                                      (compare [y1 x1] [y2 x2])))
                                     pixels)]
@@ -61,27 +61,19 @@
                           (map #(apply str (vals %1))
                                (partition-all m coordinates-by-y-axis))))))
 
-(defn build-image [commands]
-  (reduce (fn [image command]
-            (case (:command command)
-              :new-image (new-image command)
-              :colour-pixel (colour-pixel command image)
-              :vertical-segment (vertical-segment command image)))
-          {}
-          commands))
-
-(defn show-image [command app-state]
-  (render-image (build-image (:history app-state)))
-  app-state)
+(defn execute-command [command image]
+  (case (:command command)
+    :new-image (new-image command)
+    :colour-pixel (colour-pixel command image)
+    :vertical-segment (vertical-segment command image)
+    nil))
 
 (defn process-command [command app-state]
-  (let [instruction (:command command)]
-    (condp some [instruction]
-      #{:new-image
-        :colour-pixel
-        :vertical-segment} (update-in app-state [:history] conj command)
-      #{:show-image} (show-image command app-state)
-      app-state)))
+  (if-let [command-output (execute-command command (:image app-state))]
+    (-> app-state
+        (update-in [:image] merge command-output)
+        (update-in [:history] conj command))
+    app-state))
 
 (defn show-error [error]
   (println (str "Error: " error)))
@@ -97,6 +89,7 @@
          command (parse-command (read-line))]
     (cond
       (contains? command :error) (show-error (:error command))
+      (= :show-image (:command command)) (show-image (:image app-state))
       (= :exit (:command command)) (terminate-session))
     (recur (process-command command app-state)
            (parse-command (read-line)))))

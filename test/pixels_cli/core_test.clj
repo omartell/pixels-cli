@@ -8,8 +8,12 @@
 
 (deftest processing-commands
   (testing "new image"
-    (is (= {:history [{:command :new-image}]}
-           (process-command {:command :new-image}
+    (is (= {:history [{:command :new-image :input {:m 3 :n 3}}]
+            :image {:pixels {[1 1] "O" [2 1] "O" [3 1] "O"
+                             [1 2] "O" [2 2] "O" [3 2] "O"
+                             [1 3] "O" [2 3] "O" [3 3] "O"}
+                    :m 3 :n 3}}
+           (process-command {:command :new-image :input {:m 3 :n 3}}
                             {:history []}))))
   (testing "not recognised command"
     (is (= {:history []}
@@ -23,18 +27,6 @@
           :n 3 :m 3}
          (new-image {:command :new-image :input {:m 3 :n 3}}))))
 
-(deftest building-images
-  (is (= {:pixels {[1 1] "C" [2 1] "O" [3 1] "O"
-                   [1 2] "C" [2 2] "O" [3 2] "O"
-                   [1 3] "C" [2 3] "O" [3 3] "O"}
-          :m 3 :n 3}
-         (build-image [{:command :new-image
-                        :input {:m 3 :n 3}}
-                       {:command :colour-pixel
-                        :input {:x 1 :y 1 :colour "C"}}
-                       {:command :vertical-segment
-                        :input {:x 1 :y1 1 :y2 3 :colour "C"}}]))))
-
 (deftest colouring-pixels
   (is (= {:pixels {[2 1] "C"}}
          (colour-pixel {:command :colour-pixel :input {:x 2
@@ -44,10 +36,10 @@
 (deftest rendering-images
   (is (re-find
        (re-pattern (image "COO" "COO" "COO"))
-       (with-out-str (render-image {:pixels {[1 1] "C" [2 1] "O" [3 1] "O"
-                                             [1 2] "C" [2 2] "O" [3 2] "O"
-                                             [1 3] "C" [2 3] "O" [3 3] "O"}
-                                    :m 3 :n 3})))))
+       (with-out-str (show-image {:pixels {[1 1] "C" [2 1] "O" [3 1] "O"
+                                           [1 2] "C" [2 2] "O" [3 2] "O"
+                                           [1 3] "C" [2 3] "O" [3 3] "O"}
+                                  :m 3 :n 3})))))
 
 (deftest parsing-commands
   (testing "exit command"
