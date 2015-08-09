@@ -5,29 +5,28 @@
   (let [m (Integer/parseInt mchar)
         n (Integer/parseInt nchar)]
     (if (< n 250)
-      {:command :new-image :input {:m m :n n}}
-      {:command :new-image :error "n must be a number <= 250"})))
+      {:instruction :new-image :input {:m m :n n}}
+      {:error "n must be a number <= 250"})))
 
 (defn parse-colour-pixel-command [[xchar ychar colour]]
-  {:command :colour-pixel
+  {:instruction :colour-pixel
    :input {:x (Integer/parseInt xchar)
            :y (Integer/parseInt ychar)
            :colour colour}})
 
 (defn parse-vertical-segment-command [[xchar y1char y2char colour]]
-  {:command :vertical-segment
+  {:instruction :vertical-segment
    :input {:x (Integer/parseInt xchar)
            :y1 (Integer/parseInt y1char)
            :y2 (Integer/parseInt y2char)
            :colour colour}})
 
 (defn parse-command [str]
-  (let [chars (string/split str #" ")
-        [char1 char2 char3 char4 char5] chars]
+  (let [chars (string/split str #" ")]
     (try
-      (case char1
-        "X" {:command :exit}
-        "S" {:command :show-image}
+      (case (first chars)
+        "X" {:instruction :exit}
+        "S" {:instruction :show-image}
         "I" (parse-new-image-command (rest chars))
         "L" (parse-colour-pixel-command (rest chars))
         "V" (parse-vertical-segment-command (rest chars))
@@ -62,34 +61,48 @@
                                (partition-all m coordinates-by-y-axis))))))
 
 (defn execute-command [command image]
-  (case (:command command)
+  (case (:instruction command)
     :new-image (new-image command)
     :colour-pixel (colour-pixel command image)
-    :vertical-segment (vertical-segment command image)
-    nil))
-
-(defn process-command [command app-state]
-  (if-let [command-output (execute-command command (:image app-state))]
-    (-> app-state
-        (update-in [:image] merge command-output)
-        (update-in [:history] conj command))
-    app-state))
-
-(defn show-error [error]
-  (println (str "Error: " error)))
+    :vertical-segment (vertical-segment command image)))
 
 (defn terminate-session []
-  (println "Terminating session. Bye")
-  (System/exit 0))
+  (println "Terminating session. Bye"))
+
+(defn validate-image-defined [{m :m n :n} command]
+  (when (and
+         (or (nil? m) (nil? n))
+         (not= (:instruction command) :new-image))
+    {:error "image not defined"}))
+
+(defn process-command [app-state command]
+  (let [image (:image @app-state) m (:m image) n (:n image)]
+    (case (:instruction command)
+      :show-image (show-image image)
+      :exit (terminate-session)
+      (if-let [error (validate-image-defined image command)]
+        error
+        (reset! app-state
+                {:history (conj (:history @app-state) command)
+                 :image (execute-command command image)})))))
+
+(defn handle-errors [m]
+  (when (:error m)
+    (println (str "Error: " (:error m)))))
+
+(defn apply-or-error [f input]
+  (if (:error input)
+    input
+    (f input)))
 
 (defn -main [& args]
   (println "Tiny Interactive Graphical Editor")
   (println "Enter the commands, one command per line:")
-  (loop [app-state {:history []}
-         command (parse-command (read-line))]
-    (cond
-      (contains? command :error) (show-error (:error command))
-      (= :show-image (:command command)) (show-image (:image app-state))
-      (= :exit (:command command)) (terminate-session))
-    (recur (process-command command app-state)
-           (parse-command (read-line)))))
+  (let [app-state (atom {:history [] :image {} })]
+    (loop [str-command (read-line)]
+      (let [parsed-command (parse-command str-command)]
+        (->> parsed-command
+             (apply-or-error (partial process-command app-state))
+             (handle-errors))
+        (when-not (= :exit (:instruction parsed-command))
+          (recur (read-line)))))))
