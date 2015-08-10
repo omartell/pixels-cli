@@ -42,14 +42,14 @@
                        (repeat "O"))]
     {:m column :n row :pixels pixels}))
 
-(defn colour-pixel [command image]
+(defn colour-pixel [command]
   (let [{{x :x y :y colour :colour} :input} command]
-    (assoc-in image [:pixels [x y]] colour)))
+    {:pixels {[x y] colour}}))
 
-(defn vertical-segment [command image]
+(defn vertical-segment [command]
   (let [{{x :x y1 :y1 y2 :y2 colour :colour} :input} command
         segment (for [y (range y1 (+ y2 1))] [[x y] colour])]
-    (update-in image [:pixels] #(into %1 segment))))
+    {:pixels (into {} segment)}))
 
 (defn show-image [{pixels :pixels m :m n :n}]
   (let [coordinates-by-y-axis (into (sorted-map-by (fn [[x1 y1] [x2 y2]]
@@ -60,11 +60,14 @@
                           (map #(apply str (vals %1))
                                (partition-all m coordinates-by-y-axis))))))
 
-(defn execute-command [command image]
-  (case (:instruction command)
-    :new-image (new-image command)
-    :colour-pixel (colour-pixel command image)
-    :vertical-segment (vertical-segment command image)))
+(defn translate-command-to-pixels [command]
+  (let [translation (case (:instruction command)
+                      :new-image (new-image command)
+                      :colour-pixel (colour-pixel command)
+                      :vertical-segment (vertical-segment command)
+                      :show-image {}
+                      :exit {})]
+    (assoc command :output translation)))
 
 (defn terminate-session []
   (println "Terminating session. Bye"))
@@ -74,26 +77,43 @@
              (not (#{:new-image :exit} (:instruction command))))
     {:error "image not defined"}))
 
-(defn validate-pixel-colours [{m :m n :n} command]
+(defn validate-pixel-colours [image command]
   (when (and (get-in command [:input :colour])
              (not (re-find #"[A-Z]" (get-in command [:input :colour]))))
     {:error "colour must be a capital letter"}))
 
-(defn run-validations [app-state command]
+(defn validate-pixel-coordinates [current-image translated-command]
+  (let [{m :m n :n} current-image]
+    (when (and
+           (not= (:instruction translated-command) :new-image)
+           (not (every? (fn [[[x y] v]] (and (>= y 1) (<= y n)
+                                            (>= x 1) (<= m)))
+                        (-> translated-command :output :pixels))))
+      {:error "some pixels are not withing the image definition"})))
+
+(defn validations-before-translation [app-state command]
   (if-let [error (some (fn [f] (f (:image @app-state) command))
                        [validate-image-defined
                         validate-pixel-colours])]
     error
     command))
 
-(defn process-command [app-state command]
+(defn validations-after-translation [app-state translated-command]
+  (if-let [error (some (fn [f] (f (:image @app-state) translated-command))
+                       [validate-pixel-coordinates])]
+    error
+    translated-command))
+
+(defn process-command [app-state translated-command]
   (let [image (:image @app-state) m (:m image) n (:n image)]
-    (case (:instruction command)
+    (case (:instruction translated-command)
       :show-image (show-image image)
       :exit (terminate-session)
       (reset! app-state
-              {:history (conj (:history @app-state) command)
-               :image (execute-command command image)}))))
+              {:history (conj (:history @app-state) translated-command)
+               :image (merge-with #(if (map? %1) (conj %1 %2) %2)
+                                  image
+                                  (:output translated-command))}))))
 
 (defn handle-errors [m]
   (when (:error m)
@@ -111,9 +131,10 @@
     (loop [str-command (read-line)]
       (let [parsed-command (parse-command str-command)]
         (->> parsed-command
-             (apply-or-error (partial run-validations app-state))
+             (apply-or-error (partial validations-before-translation app-state))
+             (apply-or-error translate-command-to-pixels)
+             (apply-or-error (partial validations-after-translation app-state))
              (apply-or-error (partial process-command app-state))
              (handle-errors))
         (when-not (= :exit (:instruction parsed-command))
           (recur (read-line)))))))
-

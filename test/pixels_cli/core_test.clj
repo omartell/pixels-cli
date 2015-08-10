@@ -21,13 +21,15 @@
 
 (deftest processing-commands
   (testing "new image"
-    (is (= {:history [{:instruction :new-image :input {:m 3 :n 3}}]
-            :image {:pixels {[1 1] "O" [2 1] "O" [3 1] "O"
-                             [1 2] "O" [2 2] "O" [3 2] "O"
-                             [1 3] "O" [2 3] "O" [3 3] "O"}
+    (is (= {:history [{:instruction :new-image
+                       :input {:m 3 :n 3}
+                       :output {:pixels {} :m 3 :n 3}}]
+            :image {:pixels {}
                     :m 3 :n 3}}
            (process-command (atom {:history []})
-                            {:instruction :new-image :input {:m 3 :n 3}})))))
+                            {:instruction :new-image
+                             :input {:m 3 :n 3}
+                             :output {:pixels {} :m 3 :n 3}})))))
 
 (deftest creating-new-images
   (is (= {:pixels {[1 1] "O" [2 1] "O" [3 1] "O"
@@ -40,7 +42,7 @@
   (is (= {:pixels {[2 1] "C"}}
          (colour-pixel {:instruction :colour-pixel :input {:x 2
                                                            :y 1
-                                                           :colour "C"}} {}))))
+                                                           :colour "C"}}))))
 
 (deftest rendering-images
   (is (re-find
@@ -69,12 +71,19 @@
 (deftest running-validations
   (testing "image defined"
     (is (= {:error "image not defined"}
-           (run-validations (atom {:image {} :history {}})
-                            {:instruction :show-image})))
+           (validations-before-translation (atom {:image {} :history {}})
+                                           {:instruction :show-image}))))
+  (testing "pixel colours"
     (is (= {:error "colour must be a capital letter"}
-           (run-validations (atom {:image {:m 3 :n 3} :history {}})
-                            {:instruction :colour-pixel
-                             :input {:colour "1"}})))))
+           (validations-before-translation (atom {:image {:m 3 :n 3} :history {}})
+                                           {:instruction :colour-pixel
+                                            :input {:colour "1"}}))))
+  (testing "pixel coordinates"
+    (is (= {:error "some pixels are not withing the image definition"}
+           (validations-after-translation (atom {:image {:m 3 :n 3} :history {}})
+                                          {:instruction :colour-pixel
+                                           :input {:colour "C"}
+                                           :output {:pixels {[4 4] "C"}}})))))
 
 (deftest validating-new-image-command
   (is (= {:error "n must be a number <= 250" }
