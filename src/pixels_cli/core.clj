@@ -64,15 +64,6 @@
         segment (for [x (range x1 (+ x2 1))] [[x y] colour])]
     {:pixels (into {} segment)}))
 
-(defn show-image [{pixels :pixels m :m n :n}]
-  (let [coordinates-by-y-axis (into (sorted-map-by (fn [[x1 y1] [x2 y2]]
-                                                     (compare [y1 x1] [y2 x2])))
-                                    pixels)]
-    (println "Current image:")
-    (println (string/join "\n"
-                          (map #(apply str (vals %1))
-                               (partition-all m coordinates-by-y-axis))))))
-
 (defn translate-command-to-pixels [command]
   (let [translation (case (:instruction command)
                       :new-image (new-image command)
@@ -82,9 +73,6 @@
                       :show-image {}
                       :exit {})]
     (assoc command :output translation)))
-
-(defn terminate-session []
-  (println "Terminating session. Bye"))
 
 (defn validate-image-defined [{m :m n :n} command]
   (when (and (or (nil? m) (nil? n))
@@ -117,6 +105,18 @@
                        [validate-pixel-coordinates])]
     error
     translated-command))
+
+(defn terminate-session []
+  (println "Terminating session. Bye"))
+
+(defn show-image [{pixels :pixels m :m n :n}]
+  (let [coordinates-by-y-axis (into (sorted-map-by (fn [[x1 y1] [x2 y2]]
+                                                     (compare [y1 x1] [y2 x2])))
+                                    pixels)]
+    (println "Current image:")
+    (println (string/join "\n"
+                          (map #(apply str (vals %1))
+                               (partition-all m coordinates-by-y-axis))))))
 
 (defn process-command [app-state translated-command]
   (let [image (:image @app-state) m (:m image) n (:n image)]
