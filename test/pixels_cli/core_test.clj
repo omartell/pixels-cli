@@ -9,12 +9,13 @@
 (deftest running-the-program
   (testing "a sequence of commands"
     (is (re-find
-         (re-pattern (lines "CYO"
-                            "OYO"
+         (re-pattern (lines "XXX"
+                            "CYO"
                             "OYO"))
          (with-out-str (with-in-str (lines "I 3 3"
-                                           "L 1 1 C"
+                                           "L 1 2 C"
                                            "V 2 1 3 Y"
+                                           "H 1 3 1 X"
                                            "S"
                                            "X")
                          (-main)))))))
@@ -44,6 +45,20 @@
                                                            :y 1
                                                            :colour "C"}}))))
 
+(deftest horizontal-segments
+  (is (= {:pixels {[1 1] "C" [2 1] "C" [3 1] "C"}}
+         (horizontal-segment {:instruction :horizontal-segment :input {:x1 1
+                                                                       :x2 3
+                                                                       :y  1
+                                                                       :colour "C"}}))))
+
+(deftest vertical-segments
+  (is (= {:pixels {[1 1] "C" [1 2] "C" [1 3] "C"}}
+         (vertical-segment {:instruction :horizontal-segment :input {:y1 1
+                                                                     :y2 3
+                                                                     :x  1
+                                                                     :colour "C"}}))))
+
 (deftest rendering-images
   (is (re-find
        (re-pattern (lines "COO" "COO" "COO"))
@@ -66,7 +81,10 @@
            (parse-command "L 1 1 C"))))
   (testing "drawing a vertical segment"
     (is (= {:instruction :vertical-segment :input {:x 1 :y1 1 :y2 3 :colour "C"}}
-           (parse-command "V 1 1 3 C")))))
+           (parse-command "V 1 1 3 C"))))
+  (testing "drawing a horizontal segment"
+    (is (= {:instruction :horizontal-segment :input {:x1 1 :x2 3 :y 1 :colour "C"}}
+           (parse-command "H 1 3 1 C")))))
 
 (deftest running-validations
   (testing "image defined"

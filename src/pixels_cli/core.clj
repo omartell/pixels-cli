@@ -21,6 +21,13 @@
            :y2 (Integer/parseInt y2char)
            :colour colour}})
 
+(defn parse-horizontal-segment-command [[x1char x2char ychar colour]]
+  {:instruction :horizontal-segment
+   :input {:x1 (Integer/parseInt x1char)
+           :x2 (Integer/parseInt x2char)
+           :y (Integer/parseInt ychar)
+           :colour colour}})
+
 (defn parse-command [str]
   (let [chars (string/split str #" ")]
     (try
@@ -30,6 +37,7 @@
         "I" (parse-new-image-command (rest chars))
         "L" (parse-colour-pixel-command (rest chars))
         "V" (parse-vertical-segment-command (rest chars))
+        "H" (parse-horizontal-segment-command (rest chars))
         {:error "not a valid command"})
       (catch NumberFormatException e
         {:error "not a valid argument"}))))
@@ -51,6 +59,11 @@
         segment (for [y (range y1 (+ y2 1))] [[x y] colour])]
     {:pixels (into {} segment)}))
 
+(defn horizontal-segment [command]
+  (let [{{x1 :x1 x2 :x2 y :y colour :colour} :input} command
+        segment (for [x (range x1 (+ x2 1))] [[x y] colour])]
+    {:pixels (into {} segment)}))
+
 (defn show-image [{pixels :pixels m :m n :n}]
   (let [coordinates-by-y-axis (into (sorted-map-by (fn [[x1 y1] [x2 y2]]
                                                      (compare [y1 x1] [y2 x2])))
@@ -65,6 +78,7 @@
                       :new-image (new-image command)
                       :colour-pixel (colour-pixel command)
                       :vertical-segment (vertical-segment command)
+                      :horizontal-segment (horizontal-segment command)
                       :show-image {}
                       :exit {})]
     (assoc command :output translation)))
