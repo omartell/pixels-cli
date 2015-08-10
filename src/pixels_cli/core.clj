@@ -70,21 +70,30 @@
   (println "Terminating session. Bye"))
 
 (defn validate-image-defined [{m :m n :n} command]
-  (when (and
-         (or (nil? m) (nil? n))
-         (not= (:instruction command) :new-image))
+  (when (and (or (nil? m) (nil? n))
+             (not (#{:new-image :exit} (:instruction command))))
     {:error "image not defined"}))
+
+(defn validate-pixel-colours [{m :m n :n} command]
+  (when (and (get-in command [:input :colour])
+             (not (re-find #"[A-Z]" (get-in command [:input :colour]))))
+    {:error "colour must be a capital letter"}))
+
+(defn run-validations [app-state command]
+  (if-let [error (some (fn [f] (f (:image @app-state) command))
+                       [validate-image-defined
+                        validate-pixel-colours])]
+    error
+    command))
 
 (defn process-command [app-state command]
   (let [image (:image @app-state) m (:m image) n (:n image)]
     (case (:instruction command)
       :show-image (show-image image)
       :exit (terminate-session)
-      (if-let [error (validate-image-defined image command)]
-        error
-        (reset! app-state
-                {:history (conj (:history @app-state) command)
-                 :image (execute-command command image)})))))
+      (reset! app-state
+              {:history (conj (:history @app-state) command)
+               :image (execute-command command image)}))))
 
 (defn handle-errors [m]
   (when (:error m)
@@ -102,7 +111,9 @@
     (loop [str-command (read-line)]
       (let [parsed-command (parse-command str-command)]
         (->> parsed-command
+             (apply-or-error (partial run-validations app-state))
              (apply-or-error (partial process-command app-state))
              (handle-errors))
         (when-not (= :exit (:instruction parsed-command))
           (recur (read-line)))))))
+

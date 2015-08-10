@@ -66,6 +66,16 @@
     (is (= {:instruction :vertical-segment :input {:x 1 :y1 1 :y2 3 :colour "C"}}
            (parse-command "V 1 1 3 C")))))
 
+(deftest running-validations
+  (testing "image defined"
+    (is (= {:error "image not defined"}
+           (run-validations (atom {:image {} :history {}})
+                            {:instruction :show-image})))
+    (is (= {:error "colour must be a capital letter"}
+           (run-validations (atom {:image {:m 3 :n 3} :history {}})
+                            {:instruction :colour-pixel
+                             :input {:colour "1"}})))))
+
 (deftest validating-new-image-command
   (is (= {:error "n must be a number <= 250" }
          (parse-command "I 1 251"))))
