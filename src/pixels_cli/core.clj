@@ -37,7 +37,27 @@
     input
     (f input)))
 
-(defn -main [& args]
+(defn -main
+  "This function is in charge of setting up the application state and the flow of
+  the program. The application state is an atom wrapping a map with an image key
+  and a history key.
+
+  The image key is our image representation at a specific point in time and it's
+  also a map having pixel coordinates ([x y]) as keys and colours ('C') as values.
+  The history key is just the list of commands processesed and it's only used for
+  debugging purposes right now.
+
+  The program runs in a loop waiting for lines to be read from STDIN, then takes
+  each line and runs it through a pipeline of functions. These functions at the
+  end generate a new image representation, which is then persisted into the
+  application state if everything worked correctly.
+
+  There is also some basic validation performed to check things like pixels
+  represented with capital letters and within image bounds. These validations
+  could result into errors, currently represented with maps, which are skippped
+  by any subsequent steps and processed at the end to show the error message to
+  the user."
+  [& args]
   (println "Tiny Interactive Graphical Editor")
   (println "Enter the commands, one command per line:")
   (let [app-state (atom {:history [] :image {} })]
