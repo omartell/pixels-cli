@@ -1,6 +1,5 @@
 (ns pixels-cli.validations-test
   (:require [clojure.test :refer :all]
-            [clojure.string :as string]
             [pixels-cli.validations :refer :all]))
 
 (deftest running-validations
