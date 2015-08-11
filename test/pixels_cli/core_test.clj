@@ -9,13 +9,14 @@
 (deftest running-the-program
   (testing "a sequence of commands"
     (is (re-find
-         (re-pattern (lines "XXX"
+         (re-pattern (lines "ZZZ"
                             "CYO"
                             "OYO"))
          (with-out-str (with-in-str (lines "I 3 3"
                                            "L 1 2 C"
                                            "V 2 1 3 Y"
                                            "H 1 3 1 X"
+                                           "F 1 1 Z"
                                            "S"
                                            "X")
                          (-main)))))))
@@ -59,6 +60,28 @@
                                                                      :x  1
                                                                      :colour "C"}}))))
 
+(deftest finding-adjacent-pixels
+  (is (= #{[1 1] [2 1] [3 1] [1 2] [3 2] [1 3] [2 3] [3 3]}
+         (adjacent-pixels [2 2]))))
+
+(deftest finding-adjacent-pixels-with-shared-colour
+  (is (= #{[1 1] [2 1] [3 1] [1 2] [3 2] [1 3] [2 3] [3 3] [2 2]}
+         (adjacent-with-same-colour {:m 3 :n 3 :pixels {[1 1] "C" [2 1] "C" [3 1] "C"
+                                                        [1 2] "C" [2 2] "C" [3 2] "C"
+                                                        [1 3] "C" [2 3] "C" [3 3] "C"}}
+                                    [[2 2]] "C"))))
+
+(deftest region-segments
+  (is (= {:pixels {[1 1] "J" [2 1] "J" [3 1] "J"
+                   [1 2] "J" [2 2] "J" [3 2] "J"
+                   [1 3] "J" [2 3] "J" [3 3] "J"}}
+         (region-segment {:instruction :region-segment :input {:x 2
+                                                               :y 2
+                                                               :colour "J"}}
+                         {:m 3 :n 3 :pixels {[1 1] "C" [2 1] "C" [3 1] "C"
+                                             [1 2] "C" [2 2] "C" [3 2] "C"
+                                             [1 3] "C" [2 3] "C" [3 3] "C"}}))))
+
 (deftest rendering-images
   (is (re-find
        (re-pattern (lines "COO" "COO" "COO"))
@@ -84,7 +107,10 @@
            (parse-command "V 1 1 3 C"))))
   (testing "drawing a horizontal segment"
     (is (= {:instruction :horizontal-segment :input {:x1 1 :x2 3 :y 1 :colour "C"}}
-           (parse-command "H 1 3 1 C")))))
+           (parse-command "H 1 3 1 C"))))
+  (testing "drawing a region segment"
+    (is (= {:instruction :region-segment :input {:x 1 :y 1 :colour "C"}}
+           (parse-command "F 1 1 C")))))
 
 (deftest running-validations
   (testing "image defined"

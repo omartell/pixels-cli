@@ -1,5 +1,6 @@
 (ns pixels-cli.core
-  (:require [clojure.string :as string]))
+  (:require [clojure.string :as string]
+            [clojure.set :as set]))
 
 (defn parse-new-image-command [[mchar nchar]]
   (let [m (Integer/parseInt mchar)
@@ -28,6 +29,12 @@
            :y (Integer/parseInt ychar)
            :colour colour}})
 
+(defn parse-region-segment-command [[xchar ychar colour]]
+  {:instruction :region-segment
+   :input {:x (Integer/parseInt xchar)
+           :y (Integer/parseInt ychar)
+           :colour colour}})
+
 (defn parse-command [str]
   (let [chars (string/split str #" ")]
     (try
@@ -38,6 +45,7 @@
         "L" (parse-colour-pixel-command (rest chars))
         "V" (parse-vertical-segment-command (rest chars))
         "H" (parse-horizontal-segment-command (rest chars))
+        "F" (parse-region-segment-command (rest chars))
         {:error "not a valid command"})
       (catch NumberFormatException e
         {:error "not a valid argument"}))))
@@ -64,12 +72,40 @@
         segment (for [x (range x1 (+ x2 1))] [[x y] colour])]
     {:pixels (into {} segment)}))
 
-(defn translate-command-to-pixels [command]
+(defn adjacent-pixels [[x y]]
+  (into #{} (for [sumx #{-1 1 0} sumy #{-1 1 0}
+                  :when (not (and (= sumx 0) (= sumy 0)))]
+              [(+ x sumx) (+ y sumy)])))
+
+(defn within-limits? [m n [x y]]
+  (and (>= y 1) (<= y n) (>= x 1) (<= m)))
+
+(defn adjacent-with-same-colour
+  [{current-image :pixels m :m n :n} pixels-to-check colour]
+  (loop [pixels pixels-to-check
+         region (into #{} pixels-to-check)]
+    (let [adjacent-with-same-colour (into #{} (for [pixel pixels
+                                                    adjacent (adjacent-pixels pixel)
+                                                    :when (within-limits? m n adjacent)
+                                                    :when (= (get current-image adjacent) colour)]
+                                                adjacent))
+          new-adjacent (set/difference adjacent-with-same-colour region)]
+      (if (empty? new-adjacent)
+        region
+        (recur new-adjacent (into region new-adjacent))))))
+
+(defn region-segment [{{x :x y :y new-colour :colour} :input} current-image]
+  (let [current-colour (get-in current-image [:pixels [x y]])]
+    {:pixels (zipmap (adjacent-with-same-colour current-image [[x y]] current-colour)
+                     (repeat new-colour))}))
+
+(defn translate-command-to-pixels [app-state command]
   (let [translation (case (:instruction command)
                       :new-image (new-image command)
                       :colour-pixel (colour-pixel command)
                       :vertical-segment (vertical-segment command)
                       :horizontal-segment (horizontal-segment command)
+                      :region-segment (region-segment command (:image @app-state))
                       :show-image {}
                       :exit {})]
     (assoc command :output translation)))
@@ -88,8 +124,7 @@
   (let [{m :m n :n} current-image]
     (when (and
            (not= (:instruction translated-command) :new-image)
-           (not (every? (fn [[[x y] v]] (and (>= y 1) (<= y n)
-                                            (>= x 1) (<= m)))
+           (not (every? (fn [[[x y] v]] (within-limits? m n [x y]))
                         (-> translated-command :output :pixels))))
       {:error "some pixels are not withing the image definition"})))
 
@@ -146,7 +181,7 @@
       (let [parsed-command (parse-command str-command)]
         (->> parsed-command
              (apply-or-error (partial validations-before-translation app-state))
-             (apply-or-error translate-command-to-pixels)
+             (apply-or-error (partial translate-command-to-pixels app-state))
              (apply-or-error (partial validations-after-translation app-state))
              (apply-or-error (partial process-command app-state))
              (handle-errors))
