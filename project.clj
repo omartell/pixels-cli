@@ -1,5 +1,5 @@
 (defproject pixels-cli "0.1.0"
-  :description "Graphical Editor CLI"
+  :description "Command Line Image Editor"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :main pixels-cli.core
