@@ -5,7 +5,8 @@
             [pixels-cli.parsers :as parsers]))
 
 (defn terminate-session []
-  (println "Terminating session. Bye"))
+  (println "Terminating session. Bye")
+  (System/exit 0))
 
 (defn show-image [{pixels :pixels m :m n :n}]
   (let [coordinates-by-y-axis (into (sorted-map-by (fn [[x1 y1] [x2 y2]]
