@@ -13,6 +13,7 @@
                             "CYO"
                             "OYO"))
          (with-out-str (with-in-str (lines "I 3 3"
+                                           "C"
                                            "L 1 2 C"
                                            "V 2 1 3 Y"
                                            "H 1 3 1 X"
@@ -97,6 +98,9 @@
     (is (= {:instruction :new-image
             :input {:m 5 :n 4}}
            (parse-command "I 5 4"))))
+  (testing "clear image command"
+    (is (= {:instruction :clear-image}
+           (parse-command "C"))))
   (testing "show current image"
     (is (= {:instruction :show-image} (parse-command "S"))))
   (testing "colour pixel X Y"

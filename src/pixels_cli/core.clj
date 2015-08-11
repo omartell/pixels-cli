@@ -41,6 +41,7 @@
       (case (first chars)
         "X" {:instruction :exit}
         "S" {:instruction :show-image}
+        "C" {:instruction :clear-image}
         "I" (parse-new-image-command (rest chars))
         "L" (parse-colour-pixel-command (rest chars))
         "V" (parse-vertical-segment-command (rest chars))
@@ -99,9 +100,13 @@
     {:pixels (zipmap (adjacent-with-same-colour current-image [[x y]] current-colour)
                      (repeat new-colour))}))
 
+(defn clear-image [command {m :m n :n}]
+  (new-image (assoc command :input {:m m :n n})))
+
 (defn translate-command-to-pixels [app-state command]
   (let [translation (case (:instruction command)
                       :new-image (new-image command)
+                      :clear-image (clear-image command (:image @app-state))
                       :colour-pixel (colour-pixel command)
                       :vertical-segment (vertical-segment command)
                       :horizontal-segment (horizontal-segment command)
