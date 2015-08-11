@@ -116,23 +116,6 @@
     (is (= {:instruction :region-segment :input {:x 1 :y 1 :colour "C"}}
            (parse-command "F 1 1 C")))))
 
-(deftest running-validations
-  (testing "image defined"
-    (is (= {:error "image not defined"}
-           (validations-before-translation (atom {:image {} :history {}})
-                                           {:instruction :show-image}))))
-  (testing "pixel colours"
-    (is (= {:error "colour must be a capital letter"}
-           (validations-before-translation (atom {:image {:m 3 :n 3} :history {}})
-                                           {:instruction :colour-pixel
-                                            :input {:colour "1"}}))))
-  (testing "pixel coordinates"
-    (is (= {:error "some pixels are not withing the image definition"}
-           (validations-after-translation (atom {:image {:m 3 :n 3} :history {}})
-                                          {:instruction :colour-pixel
-                                           :input {:colour "C"}
-                                           :output {:pixels {[4 4] "C"}}})))))
-
 (deftest validating-new-image-command
   (is (= {:error "n must be a number <= 250" }
          (parse-command "I 1 251"))))

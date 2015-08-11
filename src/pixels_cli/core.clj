@@ -1,6 +1,7 @@
 (ns pixels-cli.core
   (:require [clojure.string :as string]
-            [clojure.set :as set]))
+            [clojure.set :as set]
+            [pixels-cli.validations :as validations]))
 
 (defn parse-new-image-command [[mchar nchar]]
   (let [m (Integer/parseInt mchar)
@@ -115,36 +116,6 @@
                       :exit {})]
     (assoc command :output translation)))
 
-(defn validate-image-defined [{m :m n :n} command]
-  (when (and (or (nil? m) (nil? n))
-             (not (#{:new-image :exit} (:instruction command))))
-    {:error "image not defined"}))
-
-(defn validate-pixel-colours [image command]
-  (when (and (get-in command [:input :colour])
-             (not (re-find #"[A-Z]" (get-in command [:input :colour]))))
-    {:error "colour must be a capital letter"}))
-
-(defn validate-pixel-coordinates [current-image translated-command]
-  (let [{m :m n :n} current-image]
-    (when (and
-           (not= (:instruction translated-command) :new-image)
-           (not (every? (fn [[[x y] v]] (within-limits? m n [x y]))
-                        (-> translated-command :output :pixels))))
-      {:error "some pixels are not withing the image definition"})))
-
-(defn validations-before-translation [app-state command]
-  (if-let [error (some (fn [f] (f (:image @app-state) command))
-                       [validate-image-defined
-                        validate-pixel-colours])]
-    error
-    command))
-
-(defn validations-after-translation [app-state translated-command]
-  (if-let [error (some (fn [f] (f (:image @app-state) translated-command))
-                       [validate-pixel-coordinates])]
-    error
-    translated-command))
 
 (defn terminate-session []
   (println "Terminating session. Bye"))
@@ -185,9 +156,9 @@
     (loop [str-command (read-line)]
       (let [parsed-command (parse-command str-command)]
         (->> parsed-command
-             (apply-or-error (partial validations-before-translation app-state))
+             (apply-or-error (partial validations/before-command-translation app-state))
              (apply-or-error (partial translate-command-to-pixels app-state))
-             (apply-or-error (partial validations-after-translation app-state))
+             (apply-or-error (partial validations/after-command-translation app-state))
              (apply-or-error (partial process-command app-state))
              (handle-errors))
         (when-not (= :exit (:instruction parsed-command))
