@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-lein trampoline run
+java -jar target/pixels-cli-0.1.0-standalone.jar
