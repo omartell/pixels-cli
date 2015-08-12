@@ -8,19 +8,20 @@
 
 (deftest running-the-program
   (testing "a sequence of commands"
-    (is (re-find
-         (re-pattern (lines "ZZZ"
-                            "CYO"
-                            "OYO"))
-         (with-out-str (with-in-str (lines "I 3 3"
-                                           "C"
-                                           "L 1 2 C"
-                                           "V 2 1 3 Y"
-                                           "H 1 3 1 X"
-                                           "F 1 1 Z"
-                                           "S"
-                                           "X")
-                         (-main)))))))
+    (with-redefs [terminate-session #()]
+      (is (re-find
+           (re-pattern (lines "ZZZ"
+                              "CYO"
+                              "OYO"))
+           (with-out-str (with-in-str (lines "I 3 3"
+                                             "C"
+                                             "L 1 2 C"
+                                             "V 2 1 3 Y"
+                                             "H 1 3 1 X"
+                                             "F 1 1 Z"
+                                             "S"
+                                             "X")
+                           (-main))))))))
 
 (deftest rendering-images
   (is (re-find
